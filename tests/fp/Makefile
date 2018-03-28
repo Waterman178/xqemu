@@ -550,7 +550,7 @@ TF_OBJS_LIB += $(TF_OBJS_WRITECASE)
 TF_OBJS_LIB += testLoops_common.o
 TF_OBJS_LIB += $(TF_OBJS_TEST)
 
-BINARIES := fp-test$(EXESUF)
+BINARIES := fp-test$(EXESUF) fp-bench$(EXESUF)
 
 all: $(BINARIES)
 
@@ -582,9 +582,12 @@ $(TF_OBJS_LIB) slowfloat.o: %.o: $(TF_SOURCE_DIR)/%.c
 
 libtestfloat.a: $(TF_OBJS_LIB)
 
+fp-bench$(EXESUF): fp-bench.o softfloat.o
+
 clean:
 	rm -f *.o *.d $(BINARIES)
 	rm -f fp-test$(EXESUF)
+	rm -f fp-bench$(EXESUF)
 	rm -f libsoftfloat.a
 	rm -f libtestfloat.a
 
