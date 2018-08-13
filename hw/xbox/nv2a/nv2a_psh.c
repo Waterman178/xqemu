@@ -413,51 +413,57 @@ static void add_stage_code(struct PixelShader *ps,
                               qstring_get_str(c), qstring_get_str(d));
     }
 
-    QString *ab_mapping = get_output(ab, output.mapping);
-    QString *cd_mapping = get_output(cd, output.mapping);
-    QString *ab_dest = get_var(ps, output.ab, true);
-    QString *cd_dest = get_var(ps, output.cd, true);
-    QString *sum_dest = get_var(ps, output.muxsum, true);
+    if (output.ab != PS_REGISTER_DISCARD) {
+        QString *ab_dest = get_var(ps, output.ab, true);
+        QString *ab_mapping = get_output(ab, output.mapping);
 
-    if (qstring_get_length(ab_dest)) {
         qstring_append_fmt(ps->code, "%s.%s = %s(%s);\n",
                            qstring_get_str(ab_dest), write_mask, caster, qstring_get_str(ab_mapping));
-    } else {
+
+        /* FIXME: Will these still write rgb? */
+        if (!is_alpha && output.flags & PS_COMBINEROUTPUT_AB_BLUE_TO_ALPHA) {
+            qstring_append_fmt(ps->code, "%s.a = %s.b;\n",
+                               qstring_get_str(ab_dest), qstring_get_str(ab_dest));
+        }
+
+        QDECREF(ab_mapping);
         QDECREF(ab_dest);
-        QINCREF(ab_mapping);
-        ab_dest = ab_mapping;
     }
 
-    if (qstring_get_length(cd_dest)) {
+    if (output.cd != PS_REGISTER_DISCARD) {
+        QString *cd_dest = get_var(ps, output.cd, true);
+        QString *cd_mapping = get_output(cd, output.mapping);
+
         qstring_append_fmt(ps->code, "%s.%s = %s(%s);\n",
                            qstring_get_str(cd_dest), write_mask, caster, qstring_get_str(cd_mapping));
-    } else {
+
+        /* FIXME: Will these still write rgb? */
+        if (!is_alpha && output.flags & PS_COMBINEROUTPUT_CD_BLUE_TO_ALPHA) {
+            qstring_append_fmt(ps->code, "%s.a = %s.b;\n",
+                               qstring_get_str(cd_dest), qstring_get_str(cd_dest));
+        }
+
+        QDECREF(cd_mapping);
         QDECREF(cd_dest);
-        QINCREF(cd_mapping);
-        cd_dest = cd_mapping;
     }
 
-    if (!is_alpha && output.flags & PS_COMBINEROUTPUT_AB_BLUE_TO_ALPHA) {
-        qstring_append_fmt(ps->code, "%s.a = %s.b;\n",
-                           qstring_get_str(ab_dest), qstring_get_str(ab_dest));
-    }
-    if (!is_alpha && output.flags & PS_COMBINEROUTPUT_CD_BLUE_TO_ALPHA) {
-        qstring_append_fmt(ps->code, "%s.a = %s.b;\n",
-                           qstring_get_str(cd_dest), qstring_get_str(cd_dest));
-    }
+    if (output.muxsum != PS_REGISTER_DISCARD) {
+        QString *sum_dest = get_var(ps, output.muxsum, true);
+        QString *sum;
+        if (output.muxsum_op == PS_COMBINEROUTPUT_AB_CD_SUM) {
+            sum = qstring_from_fmt("(%s + %s)", qstring_get_str(ab), qstring_get_str(cd));
+        } else {
+            sum = qstring_from_fmt("((r0.a >= 0.5) ? %s : %s)",
+                                   qstring_get_str(cd), qstring_get_str(ab));
+        }
+        QString *sum_mapping = get_output(sum, output.mapping);
 
-    QString *sum;
-    if (output.muxsum_op == PS_COMBINEROUTPUT_AB_CD_SUM) {
-        sum = qstring_from_fmt("(%s + %s)", qstring_get_str(ab), qstring_get_str(cd));
-    } else {
-        sum = qstring_from_fmt("((r0.a >= 0.5) ? %s : %s)",
-                               qstring_get_str(cd), qstring_get_str(ab));
-    }
-
-    QString *sum_mapping = get_output(sum, output.mapping);
-    if (qstring_get_length(sum_dest)) {
         qstring_append_fmt(ps->code, "%s.%s = %s(%s);\n",
                            qstring_get_str(sum_dest), write_mask, caster, qstring_get_str(sum_mapping));
+
+        QDECREF(sum);
+        QDECREF(sum_mapping);
+        QDECREF(sum_dest);
     }
 
     QDECREF(a);
@@ -466,13 +472,6 @@ static void add_stage_code(struct PixelShader *ps,
     QDECREF(d);
     QDECREF(ab);
     QDECREF(cd);
-    QDECREF(ab_mapping);
-    QDECREF(cd_mapping);
-    QDECREF(ab_dest);
-    QDECREF(cd_dest);
-    QDECREF(sum_dest);
-    QDECREF(sum);
-    QDECREF(sum_mapping);
 }
 
 // Add code for the final combiner stage
