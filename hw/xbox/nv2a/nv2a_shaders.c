@@ -715,6 +715,8 @@ STRUCT_VERTEX_DATA);
             qstring_append(body, "  float fogDistance = oFog.x;\n");
         }
 
+        qstring_append(body, "  if (isnan(fogDistance)) { fogDistance = 1.0; }\n");
+
         /* FIXME: Do this per pixel? */
 
         switch (state.fog_mode) {
