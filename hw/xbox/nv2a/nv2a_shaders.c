@@ -719,6 +719,8 @@ STRUCT_VERTEX_DATA);
 
         /* FIXME: Do this per pixel? */
 
+        qstring_append(body, "  fogDistance = max(fogDistance, 0.0);\n");
+
         switch (state.fog_mode) {
         case FOG_MODE_LINEAR:
         case FOG_MODE_LINEAR_ABS:
