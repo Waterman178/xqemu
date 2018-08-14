@@ -715,11 +715,12 @@ STRUCT_VERTEX_DATA);
             qstring_append(body, "  float fogDistance = oFog.x;\n");
         }
 
-        qstring_append(body, "  if (isnan(fogDistance)) { fogDistance = 1.0; }\n");
+        /* FIXME: Microsoft just decided to use 13 bits, but hardware should have 14?! */
+        qstring_append(body, "  if (isnan(fogDistance)) { fogDistance = 8192.0; }\n");
 
         /* FIXME: Do this per pixel? */
 
-        qstring_append(body, "  fogDistance = max(fogDistance, 0.0);\n");
+        qstring_append(body, "  fogDistance = clamp(fogDistance, 0.0, 8192.0);\n");
 
         switch (state.fog_mode) {
         case FOG_MODE_LINEAR:
