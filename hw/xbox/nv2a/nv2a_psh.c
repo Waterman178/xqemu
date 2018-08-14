@@ -789,6 +789,7 @@ static QString* psh_convert(struct PixelShader *ps)
         ps->cur_stage = 8;
         qstring_append(ps->code, "// Final Combiner\n");
         add_final_stage_code(ps, ps->final_input);
+//        qstring_append(ps->code, "fragColor.rgba = vec4(pFog.aaa,1.0);\n");
     }
 
     if (ps->state.alpha_test && ps->state.alpha_func != ALPHA_FUNC_ALWAYS) {
