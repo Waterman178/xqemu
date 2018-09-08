@@ -3,6 +3,42 @@
 /* qemu softfloat status */
 static float_status qsf;
 
+static uint_fast8_t sf_initial_flags;
+static uint8_t qf_initial_flags;
+
+static int set_initial_flags(const char *flags)
+{
+    const char *p;
+
+    for (p = flags; *p != '\0'; p++) {
+        switch (*p) {
+        case 'v':
+            sf_initial_flags |= softfloat_flag_invalid;
+            qf_initial_flags |= float_flag_invalid;
+            break;
+        case 'i':
+            sf_initial_flags |= softfloat_flag_infinite;
+            qf_initial_flags |= float_flag_divbyzero;
+            break;
+        case 'o':
+            sf_initial_flags |= softfloat_flag_overflow;
+            qf_initial_flags |= float_flag_overflow;
+            break;
+        case 'u':
+            sf_initial_flags |= softfloat_flag_underflow;
+            qf_initial_flags |= float_flag_underflow;
+            break;
+        case 'x':
+            sf_initial_flags |= softfloat_flag_inexact;
+            qf_initial_flags |= float_flag_inexact;
+            break;
+        default:
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static signed char softfloat_tininess_to_qemu(uint_fast8_t mode)
 {
     switch (mode) {
@@ -57,12 +93,21 @@ static uint_fast8_t qemu_flags_to_softfloat(uint8_t qflags)
     return ret;
 }
 
+static uint_fast8_t clearExceptionFlags(void)
+{
+    uint_fast8_t prevFlags;
+
+    prevFlags = slowfloat_exceptionFlags;
+    slowfloat_exceptionFlags = sf_initial_flags;
+    return prevFlags;
+}
+
 static uint_fast8_t qemu_softfloat_clearExceptionFlags(void)
 {
     uint_fast8_t prevFlags;
 
     prevFlags = qemu_flags_to_softfloat(qsf.float_exception_flags);
-    qsf.float_exception_flags = 0;
+    qsf.float_exception_flags = qf_initial_flags;
     return prevFlags;
 }
 

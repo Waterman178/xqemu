@@ -810,7 +810,7 @@ int main(int argc, char *argv[])
     }
     genCases_setLevel(1);
     verCases_maxErrorCount = 20;
-    testLoops_trueFlagsPtr = &slowfloat_exceptionFlags;
+    testLoops_trueFlagsFunction = clearExceptionFlags;
     testLoops_subjFlagsFunction = qemu_softfloat_clearExceptionFlags;
     haveFunctionArg = false;
     functionCode = 0;
@@ -847,6 +847,7 @@ int main(int argc, char *argv[])
                 "    -errors <num>    --Stop each function test after <num> errors.\n"
                 " *  -errors 20\n"
                 "    -errorstop       --Exit after first function with any error.\n"
+                "    -flags           --Set initial FP flags (vioux). Default: none.\n"
                 "    -forever         --Test one function repeatedly (implies '-level 2').\n"
                 "    -precision32     --For extF80, test only 32-bit rounding precision.\n"
                 "    -precision64     --For extF80, test only 64-bit rounding precision.\n"
@@ -935,6 +936,12 @@ int main(int argc, char *argv[])
             ++argv;
         } else if (!strcmp(argPtr, "errorstop")) {
             verCases_errorStop = true;
+        } else if (!strcmp(argPtr, "flags")) {
+            if (argc < 2 || set_initial_flags(argv[1])) {
+                fail("'%s' requires a subset of 'vioux' as argument", *argv);
+            }
+            --argc;
+            ++argv;
         } else if (!strcmp(argPtr, "forever")) {
             genCases_setLevel(2);
             testLoops_forever = true;
