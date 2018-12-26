@@ -652,10 +652,28 @@ static void se_frame(void *opaque)
 
     if ((d->gp.regs[NV_PAPU_GPRST] & NV_PAPU_GPRST_GPRST)
         && (d->gp.regs[NV_PAPU_GPRST] & NV_PAPU_GPRST_GPDSPRST)) {
-        dsp_start_frame(d->gp.dsp);
 
         // hax
-        dsp_run(d->gp.dsp, 1000);
+
+
+        // Use these to fine tune testing
+        unsigned int frames = 1; // Target should be ~15
+        unsigned int cycles = 40000; // Target should be ~106666, minimum 40000
+
+        // Don't touch this
+        uint64_t dryrun = qemu_clock_get_ns(QEMU_CLOCK_REALTIME);
+        uint64_t before = qemu_clock_get_ns(QEMU_CLOCK_REALTIME);
+        for(int i = 0; i < frames; i++) {
+          dsp_start_frame(d->gp.dsp);
+          dsp_run(d->gp.dsp, cycles);
+        }
+        uint64_t after = qemu_clock_get_ns(QEMU_CLOCK_REALTIME);
+        uint64_t elapsed = after - before;
+        uint64_t budget = frames * 666666; // We have 0.666666 ms per frame
+        budget *= cycles; // We did only a small amount of cycles
+        budget /= 106666; // But we should have done 106666
+        uint64_t elapsed_per_frame = elapsed / frames;
+        printf("%d frames: %" PRIu64 " ns elapsed (%" PRId64 " ns dryrun, %" PRId64 " ns per frame [%f%% realtime]), %" PRId64 " ns of budget left\n", frames, elapsed, before - dryrun, elapsed_per_frame, (double)budget / elapsed * 100.0, budget - elapsed);
     }
     if ((d->ep.regs[NV_PAPU_EPRST] & NV_PAPU_GPRST_GPRST)
         && (d->ep.regs[NV_PAPU_EPRST] & NV_PAPU_GPRST_GPDSPRST)) {
